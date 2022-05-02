@@ -1,0 +1,56 @@
+"Remove 1 blight, defend 4."
+-rem(1,bli)
+-def(4)
+
+"1 dmg, if target coastal, +1 dmg"
+-dmg(1)
+-do_if(eq(ter,"C"),dmg(1))
+(ter = "C" ? 2 : 1) -> dmg
+
+"2 dmg for each blight here, +1 dmg for each adjacent blight"
+-dmg(2*bli)
+-dmg(sum(map(adj,bli)))
+2*bli->dmg
+adj->bli->sum->dmg
+
+"replace 1 town with a troop for every sandy or mountainous blighted area around you"
+
+adj->bli->sum->rep,T,S,@,@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+EVAL IN (), pass down via ->!!!
+
+How to do split (dmg to towns/cities only)
+
+Use @ symbol as current value in eval - DONE
+Iterator examples [L1,L2,L3..] and [1,0,1,2,3]
+
+Function can either map or reduce..how to know?
+
+Call last function statefully
+
+Sets can't do map
+
+Adding and multiplying
+
+BFS for range effects
+
+Functions can have args after commas,passed into opcode user
+
+(2 * bli)
+
+End in actionable function
+
+Support / operator over ,
