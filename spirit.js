@@ -50,8 +50,8 @@ const transformations = (target, series, targetMap, reducers) => {
             }else {
                 subCodes = subCodes.map(code=>{return advancedOpCodeReplace(code,currentArgument)})
                 opCode = subCodes[0];
-                const operation = targetMap[opCode];
-                currentArgument = operation(target,...subCodes.slice(1))
+                //Want to keep the current value as default fill in
+                currentArgument = targetMap[opCode](target,...subCodes.slice(1))
             }
         }
         pos++;
