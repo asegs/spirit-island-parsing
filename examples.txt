@@ -54,3 +54,5 @@ Functions can have args after commas,passed into opcode user
 End in actionable function
 
 Support / operator over ,
+
+Pure hardcoded values

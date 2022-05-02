@@ -27,7 +27,11 @@ const transformations = (target, series, targetMap, reducers) => {
                 subCodes = subCodes.map(code=>{return advancedOpCodeReplace(code,currentArgument)});
                 return targetMap[subCodes[0]](target,...subCodes.slice(1));
             }else {
-                return targetMap[subCodes[0]](target,currentArgument,...subCodes.slice(1));
+                if (currentArgument) {
+                    return targetMap[subCodes[0]](target,currentArgument,...subCodes.slice(1));
+                }else {
+                    return targetMap[subCodes[0]](target,...subCodes.slice(1));
+                }
             }
         }
         if (isIterable(currentArgument)) {
@@ -72,7 +76,9 @@ const isAdvancedOpCode = (string) => {
 const adj1 = types.Land("S",[],blight = 1);
 const adj2 = types.Land("M",[],blight=1);
 const adj3 = types.Land("W",[])
-const land = types.Land("M", [adj1,adj2,adj3], blight = 2,towns = 2,0,3);
+const land = types.Land("J", [adj1,adj2,adj3], blight = 2,towns = 2,0,3);
+
 console.log(transformations(land,"adj->ftr,S/M->bli->sum->rep,T,S,@,@",ops.landMappings,ops.higherOrder));
 console.log(transformations(land,"set->ftr,J/S->sum->(@ == 0 ? 1 : 4)->def",ops.landMappings,ops.higherOrder))
-console.log(transformations(land,"dah->dmg",ops.landMappings,ops.higherOrder))
+console.log(transformations(land,"dah->dmg,A",ops.landMappings,ops.higherOrder))
+console.log(transformations(land,"dme,1,C/T",ops.landMappings,ops.higherOrder))

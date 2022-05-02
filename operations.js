@@ -9,6 +9,9 @@ const landMappings = {
     set: (land) => {return [land]},
     fer: (land, fear) => {main.fear += fear},
     dmg: (land,amount,...types) => {
+        if (Array.isArray(types) && types.length === 1) {
+            types = types[0];
+        }
         return {
             type: "dmg",
             state: "open",
@@ -33,8 +36,20 @@ const landMappings = {
             land: land,
             state: "closed"
         }
+    },
+    dme: (land,amount,...types) => {
+        if (Array.isArray(types) && types.length === 1) {
+            types = types[0];
+        }
+        return {
+            type: "dme",
+            state: "open",
+            land: land,
+            amount: amount,
+            types: types.includes("A") ? ["C", "T", "S"] : types
+        }
+        }
     }
-}
 
 const tokens = {
     C: "cities",
