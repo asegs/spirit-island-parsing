@@ -9,9 +9,7 @@ const landMappings = {
     set: (land) => {return [land]},
     fer: (land, fear) => {main.fear += fear},
     dmg: (land,amount,...types) => {
-        if (Array.isArray(types) && types.length === 1) {
-            types = types[0];
-        }
+        types = interpretTypes(types);
         return {
             type: "dmg",
             state: "open",
@@ -38,9 +36,7 @@ const landMappings = {
         }
     },
     dme: (land,amount,...types) => {
-        if (Array.isArray(types) && types.length === 1) {
-            types = types[0];
-        }
+        types = interpretTypes(types);
         return {
             type: "dme",
             state: "open",
@@ -48,7 +44,17 @@ const landMappings = {
             amount: amount,
             types: types.includes("A") ? ["C", "T", "S"] : types
         }
+        },
+    des: (land,amount,...types) => {
+        types = interpretTypes(types);
+        return {
+            type: "des",
+            state: "open",
+            land: land,
+            amount: amount,
+            types: types.includes("A") ? ["C", "T", "S"] : types
         }
+    }
     }
 
 const tokens = {
@@ -70,6 +76,13 @@ const terrain = {
 }
 
 const numOrElse = (n,nElse) => isNaN(n) ? nElse : n
+
+const interpretTypes = (types) => {
+    if (Array.isArray(types) && types.length === 1) {
+        types = types[0];
+    }
+    return types;
+}
 
 const higherOrder = {
     sum: (arr) => {return arr.reduce((a, b) => (numOrElse(a,1) + numOrElse(b,1)),0)},

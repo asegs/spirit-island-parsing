@@ -63,9 +63,14 @@ const transformations = (target, series, targetMap, reducers) => {
     return currentArgument
 }
 
-const advancedOpCodeReplace = (string,currentArgument) => {
-    if (typeof string !== "string") {return string}
-    return string.replace("@",JSON.stringify(currentArgument));
+const fillInExplicit = (operation,value) => {
+    if (typeof operation !== "string") {return operation}
+    return operation.replace("@",JSON.stringify(value));
+}
+
+const fillInImplicit = (operation, value) => {
+    if (typeof operation !== "string") {return operation}
+
 }
 
 const isAdvancedOpCode = (string) => {
@@ -73,12 +78,14 @@ const isAdvancedOpCode = (string) => {
 }
 
 
-const adj1 = types.Land("S",[],blight = 1);
-const adj2 = types.Land("M",[],blight=1);
+const adj1 = types.Land("S",[],1);
+const adj2 = types.Land("M",[],1);
 const adj3 = types.Land("W",[])
-const land = types.Land("J", [adj1,adj2,adj3], blight = 2,towns = 2,0,3);
+const land = types.Land("J", [adj1,adj2,adj3], 2,2,0,3);
 
 console.log(transformations(land,"adj->ftr,S/M->bli->sum->rep,T,S,@,@",ops.landMappings,ops.higherOrder));
 console.log(transformations(land,"set->ftr,J/S->sum->(@ == 0 ? 1 : 4)->def",ops.landMappings,ops.higherOrder))
 console.log(transformations(land,"dah->dmg,A",ops.landMappings,ops.higherOrder))
 console.log(transformations(land,"dme,1,C/T",ops.landMappings,ops.higherOrder))
+console.log(transformations(land,"dah->(2*@)->dmg,A",ops.landMappings,ops.higherOrder))
+console.log(transformations(land,"",ops.landMappings,ops.higherOrder))

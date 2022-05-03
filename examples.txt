@@ -49,10 +49,21 @@ BFS for range effects
 
 Functions can have args after commas,passed into opcode user
 
-(2 * bli)
+(@ + `sol`)
+(2 * `bli`)
 
 End in actionable function
 
 Support / operator over ,
 
 Pure hardcoded values
+
+Syntax token examples:
+bli -> returns blight for either one target or a list of targets
+dmg,1 -> implicitly converted to dmg,@,1, does 1 damage to target
+rep,T,S,@,@ -> replace the given number of troops with soldiers
+ftr,M/J -> filter given set to terrains in [M,J]
+(@ == 0 ? 1 : 4) -> returns 4 if the passed value is not loosely equal to 0
+(@ == 0 ? 1 : `bli`) -> returns 1 if the passed value is loosely equal to 0, returns the number of blight on the tile if it is
+
+What about ending in two different possible effects (dmg total vs dmg per)
