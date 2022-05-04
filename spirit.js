@@ -15,14 +15,14 @@ const transformations = (target, series, targetMap, reducers) => {
     let currentArgument = undefined;
     let pos = 0;
     for (let opCode of opCodes) {
-        const advanced = isAdvancedOpCode(opCode)
-        const firstArg = advanced ? "" : getFirstArg(opCode);
+        const explicit = isExplicitOpCode(opCode)
+        const firstArg = explicit ? "" : getFirstArg(opCode);
         if (pos === opCodes.length - 1) {
             return interpretImplicit(opCode,currentArgument,target,targetMap,reducers);
         }
         if (isIterable(currentArgument)) {
-            if (advanced) {
-                currentArgument = currentArgument.map(value => {return interpretExplicit(opCode,value,target,targetMap,reducers)});
+            if (explicit) {
+                currentArgument = currentArgument.map(value => {return interpretExplicit(opCode.slice(1,opCode.length - 1),value,target,targetMap,reducers)});
             }else {
                 if (Object.keys(reducers).includes(firstArg)) {
                     currentArgument = interpretImplicit(opCode,currentArgument,target,targetMap,reducers);
@@ -31,8 +31,8 @@ const transformations = (target, series, targetMap, reducers) => {
                 }
             }
         }else{
-            if (advanced) {
-                currentArgument = interpretExplicit(opCode,currentArgument,target,targetMap,reducers);
+            if (explicit) {
+                currentArgument = interpretExplicit(opCode.slice(1,opCode.length - 1),currentArgument,target,targetMap,reducers);
             }else {
                 currentArgument = interpretImplicit(opCode,currentArgument,target,targetMap,reducers);
             }
@@ -48,32 +48,62 @@ const getFirstArg = (syntax) => {
 }
 
 const interpretExplicit = (syntax, value, target, operations, reducers) => {
-    let expr = syntax.slice(1,syntax.length - 1);
-    expr = expr.replace("@",JSON.stringify(value));
-    if (expr.includes('`')) {
-        const coords = coordsOfChar(expr,'`');
-        const start = coords[0];
-        const end = coords[1];
-        const implicit = expr.slice(start + 1, end);
+    let expr = syntax.replace("@",JSON.stringify(value));
+    let [exprStart,exprEnd] = [-1,-1];
+    while (expr.includes('`')) {
+        const ticks = expr.split('`').length;
+        [exprStart,exprEnd] = coordsOfChar(expr,['`'],['(',')']);
+        const implicit = expr.slice(exprStart + 1, exprEnd);
         const result = interpretImplicit(implicit,value,target,operations,reducers);
-        expr = expr.slice(0,start) + result + expr.slice(end + 1);
+        expr = expr.slice(0,exprStart) + result + expr.slice(exprEnd + 1);
+        if (ticks - 2 !== expr.split('`').length) {
+            throw 'Backtick count mismatch!'
+        }
     }
     return eval(expr);
 }
 
-const coordsOfChar = (input, symbol) => {
-    const startIdx = input.indexOf(symbol);
-    const endIdx = input.indexOf(symbol,startIdx+1);
-    return [startIdx,endIdx];
+const coordsOfChar = (input, symbols,alts) => {
+    let [start,end] = [-1,-1];
+    let nestDepth = [0,0];
+    for (let i = 0 ; i < input.length ; i ++ ) {
+        const char = input[i];
+        if (symbols.includes(char)) {
+            if (start === -1) {
+                start = i;
+            }
+            nestDepth[0]++;
+        }else if (alts.includes(char)) {
+            nestDepth[1]++;
+        }
+        if (nestDepth[0] + nestDepth[1] > 0 && nestDepth[0] % 2 === 0 && nestDepth[1] % 2 === 0) {
+            end = i;
+            break;
+        }
+    }
+    return [start,end];
 }
 
-//check if is reducer, for plural do via map (if not reducer)
 const interpretImplicit = (syntax, value, target,operations,reducers) => {
     let tokens = syntax.split(",");
     const opCode = tokens[0];
     tokens = tokens.slice(1);
     tokens = tokens.map(token => {return token === "@" ? value : token});
     tokens = tokens.map(token => {return typeof token === "string" && token.includes("/") ? token.split("/") : token});
+    tokens = tokens.map(token => {
+        let [exprStart,exprEnd] = [-1,-1];
+        while (typeof token === "string" && token.split(/[()]+/).length > 1) {
+            const parens = token.split(/[()]+/).length;
+            [exprStart,exprEnd] = coordsOfChar(token,['(',')'],['`']);
+            const explicit = token.slice(exprStart + 1, exprEnd);
+            const result = interpretExplicit(explicit,value,target,operations,reducers);
+            token = token.slice(0,exprStart) + result + token.slice(exprEnd + 1);
+            if (parens - 2 !== token.split(/[()]+/).length) {
+                throw 'Parentheses count mismatch!'
+            }
+        }
+        return token;
+    })
     const isReducing = Object.keys(reducers).includes(opCode)
     const operation = isReducing ? reducers[opCode] : operations[opCode];
     const effectiveValue = isReducing ? value : target;
@@ -87,7 +117,7 @@ const interpretImplicit = (syntax, value, target,operations,reducers) => {
 
 }
 
-const isAdvancedOpCode = (string) => {
+const isExplicitOpCode = (string) => {
     return string[0] === "(" && string[string.length - 1] === ")";
 }
 
@@ -102,5 +132,7 @@ console.log(transformations(land,"set->ftr,J/S->sum->(@ == 0 ? 1 : 4)->def",ops.
 console.log(transformations(land,"dah->dmg,A",ops.landMappings,ops.higherOrder))
 console.log(transformations(land,"dme,1,C/T",ops.landMappings,ops.higherOrder))
 console.log(transformations(land,"dah->(2*@)->dmg,A",ops.landMappings,ops.higherOrder))
-console.log(transformations(land,"(2*`dah`)->dmg,A",ops.landMappings,ops.higherOrder))
+console.log(transformations(land,"(2*`dah`+`dah`)->dmg,A",ops.landMappings,ops.higherOrder))
+console.log(transformations(land,"dmg,(true ? `bli`+1 : 1),A",ops.landMappings,ops.higherOrder))
+
 
