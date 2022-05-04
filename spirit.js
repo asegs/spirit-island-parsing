@@ -88,9 +88,9 @@ const interpretImplicit = (syntax, value, target,operations,reducers) => {
     let tokens = syntax.split(",");
     const opCode = tokens[0];
     tokens = tokens.slice(1);
-    tokens = tokens.map(token => {return token === "@" ? value : token});
-    tokens = tokens.map(token => {return typeof token === "string" && token.includes("/") ? token.split("/") : token});
     tokens = tokens.map(token => {
+        if (token === "@") {token = value;}
+        if (typeof token === "string" && token.includes("/")) {token = token.split("/");}
         let [exprStart,exprEnd] = [-1,-1];
         while (typeof token === "string" && token.split(/[()]+/).length > 1) {
             const parens = token.split(/[()]+/).length;
