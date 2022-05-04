@@ -15,47 +15,26 @@ const transformations = (target, series, targetMap, reducers) => {
     let currentArgument = undefined;
     let pos = 0;
     for (let opCode of opCodes) {
-        let subCodes = opCode.split(",");
-        subCodes = subCodes.map(code => {
-            if (code.includes("/")) {
-                return code.split("/")
-            }
-            return code;
-        })
+        const advanced = isAdvancedOpCode(opCode)
+        const firstArg = advanced ? "" : getFirstArg(opCode);
         if (pos === opCodes.length - 1) {
-            if (opCode.includes("@")) {
-                subCodes = subCodes.map(code=>{return advancedOpCodeReplace(code,currentArgument)});
-                return targetMap[subCodes[0]](target,...subCodes.slice(1));
-            }else {
-                if (currentArgument) {
-                    return targetMap[subCodes[0]](target,currentArgument,...subCodes.slice(1));
-                }else {
-                    return targetMap[subCodes[0]](target,...subCodes.slice(1));
-                }
-            }
+            return interpretImplicit(opCode,currentArgument,target,targetMap,reducers);
         }
         if (isIterable(currentArgument)) {
-            if (isAdvancedOpCode(opCode)) {
-                currentArgument = currentArgument.map(value => {return eval(advancedOpCodeReplace(opCode,value))});
+            if (advanced) {
+                currentArgument = currentArgument.map(value => {return interpretExplicit(opCode,value,target,targetMap,reducers)});
             }else {
-                opCode = subCodes[0];
-                if (Object.keys(reducers).includes(opCode)) {
-                    subCodes = subCodes.map(code=>{return advancedOpCodeReplace(code,currentArgument)})
-                    currentArgument = reducers[opCode](currentArgument,...subCodes.slice(1))
-                }else {
-                    currentArgument = currentArgument.map(t => {
-                        return targetMap[opCode](t,...subCodes.slice(1))
-                    });
+                if (Object.keys(reducers).includes(firstArg)) {
+                    currentArgument = interpretImplicit(opCode,currentArgument,target,targetMap,reducers);
+                } else {
+                    currentArgument = currentArgument.map(value => interpretImplicit(opCode,value,target,targetMap,reducers));
                 }
             }
         }else{
-            if (isAdvancedOpCode(opCode)) {
-                currentArgument = eval(advancedOpCodeReplace(opCode,currentArgument));
+            if (advanced) {
+                currentArgument = interpretExplicit(opCode,currentArgument,target,targetMap,reducers);
             }else {
-                subCodes = subCodes.map(code=>{return advancedOpCodeReplace(code,currentArgument)})
-                opCode = subCodes[0];
-                //Want to keep the current value as default fill in
-                currentArgument = targetMap[opCode](target,...subCodes.slice(1))
+                currentArgument = interpretImplicit(opCode,currentArgument,target,targetMap,reducers);
             }
         }
         pos++;
@@ -63,13 +42,48 @@ const transformations = (target, series, targetMap, reducers) => {
     return currentArgument
 }
 
-const fillInExplicit = (operation,value) => {
-    if (typeof operation !== "string") {return operation}
-    return operation.replace("@",JSON.stringify(value));
+const getFirstArg = (syntax) => {
+    const commaIdx = syntax.indexOf(",");
+    return syntax.slice(0,commaIdx !== -1 ? commaIdx : syntax.length);
 }
 
-const fillInImplicit = (operation, value) => {
-    if (typeof operation !== "string") {return operation}
+const interpretExplicit = (syntax, value, target, operations, reducers) => {
+    let expr = syntax.slice(1,syntax.length - 1);
+    expr = expr.replace("@",JSON.stringify(value));
+    if (expr.includes('`')) {
+        const coords = coordsOfChar(expr,'`');
+        const start = coords[0];
+        const end = coords[1];
+        const implicit = expr.slice(start + 1, end);
+        const result = interpretImplicit(implicit,value,target,operations,reducers);
+        expr = expr.slice(0,start) + result + expr.slice(end + 1);
+    }
+    return eval(expr);
+}
+
+const coordsOfChar = (input, symbol) => {
+    const startIdx = input.indexOf(symbol);
+    const endIdx = input.indexOf(symbol,startIdx+1);
+    return [startIdx,endIdx];
+}
+
+//check if is reducer, for plural do via map (if not reducer)
+const interpretImplicit = (syntax, value, target,operations,reducers) => {
+    let tokens = syntax.split(",");
+    const opCode = tokens[0];
+    tokens = tokens.slice(1);
+    tokens = tokens.map(token => {return token === "@" ? value : token});
+    tokens = tokens.map(token => {return typeof token === "string" && token.includes("/") ? token.split("/") : token});
+    const isReducing = Object.keys(reducers).includes(opCode)
+    const operation = isReducing ? reducers[opCode] : operations[opCode];
+    const effectiveValue = isReducing ? value : target;
+    const requiredArgs = operation.length;
+    const providedArgs = 1 + tokens.length;
+    if (requiredArgs === providedArgs + 1) {
+        return operation(target,value,...tokens);
+    }else {
+        return operation(effectiveValue,...tokens);
+    }
 
 }
 
@@ -81,11 +95,12 @@ const isAdvancedOpCode = (string) => {
 const adj1 = types.Land("S",[],1);
 const adj2 = types.Land("M",[],1);
 const adj3 = types.Land("W",[])
-const land = types.Land("J", [adj1,adj2,adj3], 2,2,0,3);
+const land = types.Land("J", [adj1,adj2,adj3], 0,2,0,3);
 
 console.log(transformations(land,"adj->ftr,S/M->bli->sum->rep,T,S,@,@",ops.landMappings,ops.higherOrder));
 console.log(transformations(land,"set->ftr,J/S->sum->(@ == 0 ? 1 : 4)->def",ops.landMappings,ops.higherOrder))
 console.log(transformations(land,"dah->dmg,A",ops.landMappings,ops.higherOrder))
 console.log(transformations(land,"dme,1,C/T",ops.landMappings,ops.higherOrder))
 console.log(transformations(land,"dah->(2*@)->dmg,A",ops.landMappings,ops.higherOrder))
-console.log(transformations(land,"",ops.landMappings,ops.higherOrder))
+console.log(transformations(land,"(2*`dah`)->dmg,A",ops.landMappings,ops.higherOrder))
+
