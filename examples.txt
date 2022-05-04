@@ -67,5 +67,3 @@ ftr,M/J -> filter given set to terrains in [M,J]
 (@ == 0 ? 1 : `bli`) -> returns 1 if the passed value is loosely equal to 0, returns the number of blight on the tile if it is
 
 What about ending in two different possible effects (dmg total vs dmg per)
-
-Complex can contain embedded exp, not vice versa
