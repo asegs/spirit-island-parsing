@@ -106,6 +106,9 @@ const interpretImplicit = (syntax, value, target,operations,reducers) => {
     })
     const isReducing = Object.keys(reducers).includes(opCode)
     const operation = isReducing ? reducers[opCode] : operations[opCode];
+    if (!operation) {
+        throw "Operation named " + opCode + " not found!"
+    }
     const effectiveValue = isReducing ? value : target;
     const requiredArgs = operation.length;
     const providedArgs = 1 + tokens.length;
@@ -125,14 +128,17 @@ const isExplicitOpCode = (string) => {
 const adj1 = types.Land("S",[],1);
 const adj2 = types.Land("M",[],1);
 const adj3 = types.Land("W",[])
-const land = types.Land("J", [adj1,adj2,adj3], 0,2,0,3);
+const land = types.Land("J", [adj1,adj2,adj3], 3,0,0,3);
 
-console.log(transformations(land,"adj->ftr,S/M->bli->sum->rep,T,S,@,@",ops.landMappings,ops.higherOrder));
-console.log(transformations(land,"set->ftr,J/S->sum->(@ == 0 ? 1 : 4)->def",ops.landMappings,ops.higherOrder))
-console.log(transformations(land,"dah->dmg,A",ops.landMappings,ops.higherOrder))
-console.log(transformations(land,"dme,1,C/T",ops.landMappings,ops.higherOrder))
-console.log(transformations(land,"dah->(2*@)->dmg,A",ops.landMappings,ops.higherOrder))
-console.log(transformations(land,"(2*`dah`+`dah`)->dmg,A",ops.landMappings,ops.higherOrder))
-console.log(transformations(land,"dmg,(true ? `bli`+1 : 1),A",ops.landMappings,ops.higherOrder))
+// console.log(transformations(land,"adj->ftr,S/M->bli->sum->rep,T,S,@,@",ops.landMappings,ops.higherOrder));
+// console.log(transformations(land,"set->ftr,J/S->sum->(@ == 0 ? 1 : 4)->def",ops.landMappings,ops.higherOrder))
+// console.log(transformations(land,"dah->dmg,A",ops.landMappings,ops.higherOrder))
+// console.log(transformations(land,"dme,1,C/T",ops.landMappings,ops.higherOrder))
+// console.log(transformations(land,"dah->(2*@)->dmg,A",ops.landMappings,ops.higherOrder))
+// console.log(transformations(land,"(2*`dah`+`dah`)->dmg,A",ops.landMappings,ops.higherOrder))
+
+
+
+console.log(transformations(land,"adj->ftr,S/M->sum->dmg,(`bli` > @ - `twn` ? 2 * `dah` : 1),T/S",ops.landMappings,ops.higherOrder))
 
 
