@@ -13,18 +13,23 @@ const isIterable = (input) => {
 const transformations = (target, series, targetMap, reducers) => {
     const opCodes = series.split("->");
     let currentArgument = undefined;
-    let pos = 0;
-    for (let opCode of opCodes) {
+    for (let pos = 0 ; pos < opCodes.length;) {
+        let opCode = opCodes[pos];
         const explicit = isExplicitOpCode(opCode)
-        const firstArg = explicit ? "" : getFirstArg(opCode);
-        if (pos === opCodes.length - 1) {
+        let firstArg = explicit ? "" : getFirstArg(opCode);
+        const escape = firstArg.length > 0 && firstArg[0] === '~';
+        if (escape) {
+            firstArg = firstArg.slice(1);
+            opCode = opCode.slice(1);
+        }
+        if (pos === opCodes.length - 1 && firstArg !== "cjp") {
             return interpretImplicit(opCode,currentArgument,target,targetMap,reducers);
         }
         if (isIterable(currentArgument)) {
             if (explicit) {
                 currentArgument = currentArgument.map(value => {return interpretExplicit(opCode.slice(1,opCode.length - 1),value,target,targetMap,reducers)});
             }else {
-                if (Object.keys(reducers).includes(firstArg)) {
+                if (Object.keys(reducers).includes(firstArg) || escape) {
                     currentArgument = interpretImplicit(opCode,currentArgument,target,targetMap,reducers);
                 } else {
                     currentArgument = currentArgument.map(value => interpretImplicit(opCode,value,target,targetMap,reducers));
@@ -37,9 +42,29 @@ const transformations = (target, series, targetMap, reducers) => {
                 currentArgument = interpretImplicit(opCode,currentArgument,target,targetMap,reducers);
             }
         }
-        pos++;
+
+        if (hasJump(currentArgument) || (Array.isArray(currentArgument) && currentArgument.filter(arg => hasJump(arg)).length > 0)) {
+            if (Array.isArray(currentArgument)) {
+                const jumps = getJumpsFromArr(currentArgument);
+                pos = jumps.jumpTo;
+                currentArgument = jumps.values;
+            }else {
+                pos = currentArgument.jumpTo;
+                currentArgument = currentArgument.value;
+            }
+        } else {
+            pos ++;
+        }
     }
     return currentArgument
+}
+
+const hasJump = (val) => {return Object.keys(val).includes("jumpTo")}
+
+const getJumpsFromArr = (arr) => {
+    const values = arr.map(element => hasJump(element) ? element.value : element);
+    const jumps = arr.filter(element => hasJump(element));
+    return {values:values,jumpTo: jumps.length > 0 ? jumps[0].jumpTo : 0};
 }
 
 const getFirstArg = (syntax) => {
@@ -128,7 +153,8 @@ const isExplicitOpCode = (string) => {
 const adj1 = types.Land("S",[],1);
 const adj2 = types.Land("M",[],1);
 const adj3 = types.Land("W",[])
-const land = types.Land("J", [adj1,adj2,adj3], 3,0,0,3);
+const adj4 = types.Land("O",[])
+const land = types.Land("J", [adj1,adj2,adj3,adj4], 3,4,1,3);
 
 // console.log(transformations(land,"adj->ftr,S/M->bli->sum->rep,T,S,@,@",ops.landMappings,ops.higherOrder));
 // console.log(transformations(land,"set->ftr,J/S->sum->(@ == 0 ? 1 : 4)->def",ops.landMappings,ops.higherOrder))
@@ -137,8 +163,14 @@ const land = types.Land("J", [adj1,adj2,adj3], 3,0,0,3);
 // console.log(transformations(land,"dah->(2*@)->dmg,A",ops.landMappings,ops.higherOrder))
 // console.log(transformations(land,"(2*`dah`+`dah`)->dmg,A",ops.landMappings,ops.higherOrder))
 
+const parse = (str) => {
+    console.log(transformations(land,str,ops.landMappings,ops.higherOrder));
+}
 
 
-console.log(transformations(land,"adj->ftr,S/M->sum->dmg,(`bli` > @ - `twn` ? 2 * `dah` : 1),T/S",ops.landMappings,ops.higherOrder))
+// parse("adj->ftr,S/M->sum->dmg,(`bli` > @ - `twn` ? 2 * `dah` : 1),T/S");
+// parse("adj->ftr,O->sum->dmg,(@ > 0 ? 2 : 1),A")
+// parse("des,(`cit`+`twn`+`trp`),A")
+// parse("rge,0,4->sum->rge,0,@->sum")
 
-
+parse("([1,2,3,4,5])->(@+1)->~cjp,(`sum` < 100),1")

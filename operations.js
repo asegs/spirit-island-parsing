@@ -8,6 +8,15 @@ const landMappings = {
     dah: (land) => {return land.dahan},
     set: (land) => {return [land]},
     fer: (land, fear) => {main.fear += fear},
+    cjp: (land, implicit, expr, to) => {
+        if (eval(expr)) {
+            return {
+                jumpTo: to,
+                value: implicit
+            };
+        }
+        return implicit;
+    },
     dmg: (land,amount,types) => {
         return {
             type: "dmg",
@@ -51,6 +60,13 @@ const landMappings = {
             amount: amount,
             types: types.includes("A") ? ["C", "T", "S"] : types
         }
+    },
+    rge: (land,start,finish) => {
+        let list = [];
+        for (let i = parseInt(start); i <= finish; i++) {
+            list.push(i);
+        }
+        return list;
     }
     }
 

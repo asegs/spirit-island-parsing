@@ -67,3 +67,7 @@ ftr,M/J -> filter given set to terrains in [M,J]
 (@ == 0 ? 1 : `bli`) -> returns 1 if the passed value is loosely equal to 0, returns the number of blight on the tile if it is
 
 What about ending in two different possible effects (dmg total vs dmg per)
+
+Implement goto with current value and main token??
+
+Notation to apply explicit token to a whole array
