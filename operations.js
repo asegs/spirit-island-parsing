@@ -67,6 +67,12 @@ const landMappings = {
             list.push(i);
         }
         return list;
+    },
+    rtr: (land,implicit) => {
+        return {
+            type: "rtr",
+            value: implicit
+        };
     }
     }
 

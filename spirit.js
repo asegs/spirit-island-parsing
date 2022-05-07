@@ -173,4 +173,4 @@ const parse = (str) => {
 // parse("des,(`cit`+`twn`+`trp`),A")
 // parse("rge,0,4->sum->rge,0,@->sum")
 
-parse("([1,2,3,4,5])->(@+1)->~cjp,(`sum` < 100),1")
+parse("([1,2,3,4,5])->(@+1)->~cjp,(`sum` < 120),1->~cjp,(20 < @[0]),5->(@+20)->~rtr")
